@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOEIC Blue Master Pro (整合內容版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .card-hover:hover { transform: translateY(-2px); transition: all 0.3s; }
+        
+        /* 熟練度顏色條 */
+        .level-0 { border-left: 6px solid #9ca3af; } /* 灰: 新 */
+        .level-1 { border-left: 6px solid #ef4444; } /* 紅: 陌生 */
+        .level-2 { border-left: 6px solid #eab308; } /* 黃: 模糊 */
+        .level-3 { border-left: 6px solid #22c55e; } /* 綠: 掌握 */
+
+        /* 四區塊格線設計 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .info-grid { grid-template-columns: 1fr 1fr; }
+        }
+        .section-box {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            font-size: 0.95rem;
+        }
+        .section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #6b7280;
+            font-weight: bold;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 2px;
+        }
+    </style>
+</head>
+<body class="pb-12">
+
+    <nav class="bg-blue-900 text-white p-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold cursor-pointer" onclick="showView('home')">TOEIC Blue Pro</h1>
+            <div class="space-x-4">
+                <button onclick="showView('home')" class="hover:text-blue-200"><i class="fas fa-book"></i> 學習模式</button>
+                <button onclick="startQuiz()" class="hover:text-blue-200"><i class="fas fa-random"></i> 隨機測驗</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto p-4 md:p-6">
+        
+        <div id="view-home">
+            <header class="mb-6 text-center">
+                <h2 class="text-2xl font-bold text-gray-800">閱讀主題列表</h2>
+                <p class="text-gray-600 text-sm">點擊主題開始學習，包含短文與詳細單字解析。</p>
+            </header>
+            <div id="topics-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                </div>
+        </div>
+
+        <div id="view-study" class="hidden">
+            <button onclick="showView('home')" class="mb-4 text-blue-600 font-semibold hover:underline">← 返回列表</button>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8 border-t-4 border-blue-600">
+                <h2 id="study-title" class="text-2xl font-bold mb-4 text-gray-800"></h2>
+                <div class="mb-2 flex justify-between items-center">
+                    <span class="text-xs font-bold text-blue-600 uppercase tracking-wide">Contextual Reading (400 words max)</span>
+                    <button onclick="toggleArticle()" class="text-sm text-gray-500 hover:text-blue-600">
+                        <i id="article-icon" class="fas fa-chevron-up"></i> 收合/展開文章
+                    </button>
+                </div>
+                <div id="study-article" class="text-gray-700 leading-relaxed p-4 bg-gray-50 rounded italic transition-all duration-300">
+                    </div>
+            </div>
+
+            <div id="words-container" class="space-y-6">
+                </div>
+        </div>
+
+        <div id="view-quiz" class="hidden">
+            <div class="max-w-xl mx-auto text-center">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">隨機單字抽考</h2>
+                <div id="quiz-card" class="bg-white rounded-xl shadow-2xl p-10 min-h-[300px] flex flex-col justify-center items-center cursor-pointer transition-transform transform hover:scale-[1.01]" onclick="flipQuizCard()">
+                    <div id="quiz-front">
+                        <h3 id="q-word" class="text-4xl font-bold text-blue-900 mb-2"></h3>
+                        <p class="text-gray-400 text-sm">點擊翻牌查看詳解</p>
+                    </div>
+                    <div id="quiz-back" class="hidden w-full text-left">
+                        <div class="border-b pb-2 mb-2">
+                            <span id="q-pos" class="text-sm bg-gray-200 px-2 py-1 rounded text-gray-700"></span>
+                            <span id="q-mean" class="text-xl font-bold text-gray-800 ml-2"></span>
+                        </div>
+                        <p id="q-sentence" class="text-gray-600 italic mb-4"></p>
+                        
+                        <div class="flex justify-center gap-4 mt-6">
+                            <button onclick="answerQuiz(false, event)" class="px-6 py-2 bg-red-100 text-red-600 rounded-full font-bold hover:bg-red-200">
+                                <i class="fas fa-times"></i> 忘記了
+                            </button>
+                            <button onclick="answerQuiz(true, event)" class="px-6 py-2 bg-green-100 text-green-600 rounded-full font-bold hover:bg-green-200">
+                                <i class="fas fa-check"></i> 記住了
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p class="mt-4 text-gray-500">已複習: <span id="quiz-count">0</span> 字</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. 完整的資料結構 (7個主題，每個主題包含短文與詳細單字解析) ---
+        const initialData = [
+            // --- Topic 1: Corporate Development (企業發展) ---
+            {
+                id: 1,
+                title: "Topic 1: Corporate Development (企業發展)",
+                article: "In the modern business landscape, corporate development is crucial for long-term survival. Many companies pursue an **expansion** strategy through **mergers** and **acquisitions**. Recently, a large **conglomerate** announced the **takeover** of a smaller competitor to consolidate its market position. The **headquarters** decided to establish a new **subsidiary** in Asia, while simultaneously opening a **branch** in Europe. However, rapid growth often requires internal **restructuring**. The CEO emphasized that a **joint venture** with a local partner would be the safest way to enter the new market.",
+                words: [
+                    { en: "acquisition", level: 0, kk: "[͵ækwəˋzɪʃən]", ipa: "/ˌæk.wɪˈzɪʃ.ən/", pos: "n.", ch: "收購；獲得", sentence: "The acquisition of the startup was finalized yesterday.", grammar: "主詞是 The acquisition，of the startup 是介系詞片語修飾主詞。", derivatives: "acquire (v. 獲得), acquisitive (adj. 貪得無厭的)", phrases: "mergers and acquisitions (M&A) 併購" },
+                    { en: "merger", level: 0, kk: "[ˋmɝdʒɚ]", ipa: "/ˈmɝː.dʒɚ/", pos: "n.", ch: "合併", sentence: "The merger between the two banks created a financial giant.", grammar: "between... 引導的片語修飾 merger。", derivatives: "merge (v. 合併)", phrases: "merger agreement 合併協議" },
+                    { en: "expansion", level: 0, kk: "[ɪkˋspænʃən]", ipa: "/ɪkˈspæn.ʃən/", pos: "n.", ch: "擴張；擴大", sentence: "The expansion into the European market was successful.", grammar: "The expansion (主詞) into the market (地點介系詞片語)。", derivatives: "expand (v. 擴張)", phrases: "business expansion 業務擴張" },
+                    { en: "subsidiary", level: 0, kk: "[səbˋsɪdɪ͵ɛrɪ]", ipa: "/səbˈsɪd.i.er.i/", pos: "n./adj.", ch: "子公司；附屬的", sentence: "Usually, a subsidiary is majority-owned by the parent company.", grammar: "Passive voice (is owned by)。", derivatives: "subsidize (v. 資助)", phrases: "wholly owned subsidiary 全資子公司" },
+                    { en: "joint venture", level: 0, kk: "[dʒɔɪnt ˋvɛntʃɚ]", ipa: "/ˌdʒɔɪnt ˈven.tʃɚ/", pos: "n.", ch: "合資企業", sentence: "They formed a joint venture to develop new technology.", grammar: "formed a joint venture (組成合資企業)。", derivatives: "venture (v. 冒險)", phrases: "enter into a joint venture 參與合資" },
+                    { en: "headquarters", level: 0, kk: "[ˋhɛdˋkwɔrtɚz]", ipa: "/ˌhedˈkwɔːr.t̬ɚz/", pos: "n.", ch: "總部", sentence: "The company headquarters is located in London.", grammar: "headquarters (單/複數同形，此處作單數)。", derivatives: "—", phrases: "corporate headquarters 公司總部" },
+                    { en: "branch", level: 0, kk: "[bræntʃ]", ipa: "/bræntʃ/", pos: "n.", ch: "分公司；分行", sentence: "We are opening a new branch on the East Coast.", grammar: "opening a new branch (開設新的分行)。", derivatives: "—", phrases: "branch office 分支機構" },
+                    { en: "restructuring", level: 0, kk: "[riˋstrʌktʃərɪŋ]", ipa: "/ˌriːˈstrʌk.tʃər.ɪŋ/", pos: "n.", ch: "重組", sentence: "The restructuring led to some layoffs.", grammar: "restructuring (U. N.) (重組)。", derivatives: "restructure (v. 重組)", phrases: "financial restructuring 財務重組" },
+                    { en: "takeover", level: 0, kk: "[ˋtekoʊvɚ]", ipa: "/ˈteɪkˌoʊ.vɚ/", pos: "n.", ch: "接管；收購", sentence: "The hostile takeover failed due to investor resistance.", grammar: "hostile takeover (惡意收購)。", derivatives: "take over (phr. 接管)", phrases: "hostile takeover 惡意收購" },
+                    { en: "conglomerate", level: 0, kk: "[kənˋglɑmərɪt]", ipa: "/kənˈɡlɑːm.ɚ.ət/", pos: "n.", ch: "企業集團", sentence: "The media conglomerate owns several television networks.", grammar: "media conglomerate (媒體集團)。", derivatives: "—", phrases: "multinational conglomerate 跨國企業集團" }
+                ]
+            },
+            // --- Topic 2: Contracts & Negotiations (合約與談判) ---
+            {
+                id: 2,
+                title: "Topic 2: Contracts & Negotiations (合約與談判)",
+                article: "Drafting a solid contract requires attention to every **clause** and **provision**. Before the **signature** page, ensure you agree with every **term** and **stipulation**. When preparing for **negotiation**, be ready to offer a **compromise** but do not miss the final **deadline**. We plan to **renew** the contract, assuming the **agreement** holds. If any party fails to meet the **obligatory** conditions, the contract may be **terminate**d.",
+                words: [
+                    { en: "stipulate", level: 0, kk: "[ˋstɪpjə͵let]", ipa: "/ˈstɪp.jə.leɪt/", pos: "v.", ch: "規定；約定", sentence: "The contract stipulates that payment must be made within 30 days.", grammar: "that 子句作受詞。", derivatives: "stipulation (n. 規定)", phrases: "stipulate a condition 約定條件" },
+                    { en: "term", level: 0, kk: "[tɝm]", ipa: "/tɝːm/", pos: "n.", ch: "條款；任期", sentence: "The terms of the contract are clearly outlined.", grammar: "terms (複數) 指條款。", derivatives: "—", phrases: "contract terms 合約條款" },
+                    { en: "compromise", level: 0, kk: "[ˋkɑmprə͵maɪz]", ipa: "/ˈkɑːm.prə.maɪz/", pos: "n./v.", ch: "妥協；讓步", sentence: "Neither side was willing to compromise on the price.", grammar: "be willing to V (願意做某事)。", derivatives: "—", phrases: "reach a compromise 達成妥協" },
+                    { en: "negotiation", level: 0, kk: "[nɪ͵goʃɪˋeʃən]", ipa: "/nɪˌɡoʊ.ʃiˈeɪ.ʃən/", pos: "n.", ch: "談判", sentence: "The negotiation process took three weeks.", grammar: "negotiation (C. N.) (談判過程)。", derivatives: "negotiate (v. 談判), negotiator (n. 談判者)", phrases: "conduct negotiations 進行談判" },
+                    { en: "agreement", level: 0, kk: "[əˋgrimənt]", ipa: "/əˈɡriː.mənt/", pos: "n.", ch: "協議；一致", sentence: "We reached a verbal agreement on the main points.", grammar: "reach an agreement (達成協議)。", derivatives: "agree (v. 同意)", phrases: "mutual agreement 雙方協議" },
+                    { en: "deadline", level: 0, kk: "[ˋdɛd͵laɪn]", ipa: "/ˈded.laɪn/", pos: "n.", ch: "截止日期", sentence: "The project deadline is Friday.", grammar: "The project deadline is (截止日期是)。", derivatives: "—", phrases: "meet the deadline 趕上截止日" },
+                    { en: "signature", level: 0, kk: "[ˋsɪgnətʃɚ]", ipa: "/ˈsɪɡ.nə.tʃɚ/", pos: "n.", ch: "簽名", sentence: "We need the director's signature on the final document.", grammar: "director's signature (所有格)。", derivatives: "sign (v. 簽名)", phrases: "collect signatures 收集簽名" },
+                    { en: "clause", level: 0, kk: "[klɔz]", ipa: "/klɔːz/", pos: "n.", ch: "條款", sentence: "Please review the indemnity clause carefully.", grammar: "review the clause (審查條款)。", derivatives: "—", phrases: "escape clause 免責條款" },
+                    { en: "renew", level: 0, kk: "[rɪˋnju]", ipa: "/rɪˈnuː/", pos: "v.", ch: "續約；更新", sentence: "We decided to renew the lease for another year.", grammar: "renew the lease (續租租約)。", derivatives: "renewal (n. 更新)", phrases: "renew a contract 續約合同" },
+                    { en: "terminate", level: 0, kk: "[ˋtɝmə͵net]", ipa: "/ˈtɝː.mə.neɪt/", pos: "v.", ch: "終止", sentence: "The company may terminate the agreement with 30 days notice.", grammar: "terminate the agreement (終止協議)。", derivatives: "termination (n. 終止)", phrases: "terminate employment 終止僱傭" }
+                ]
+            },
+            // --- Topic 3: Personnel and Recruitment (人事與招聘) ---
+            {
+                id: 3,
+                title: "Topic 3: Personnel and Recruitment (人事與招聘)",
+                article: "The Human Resources (**HR**) department recently announced a new hiring initiative to fill the current **vacancy**. All potential **applicants** must submit a detailed **resume** and demonstrate that they are **eligible** for the position. A strong educational background is a mandatory **prerequisite**. Candidates who pass the initial screening will be invited for a final **interview**. The challenge is to **recruit** top talent while offering a competitive **compensation** package. New hires will undergo a three-month **probationary** period before their permanent status is confirmed.",
+                words: [
+                    { en: "recruit", level: 0, kk: "[rɪˋkrut]", ipa: "/rɪˈkruːt/", pos: "v./n.", ch: "招募；新成員", sentence: "The company decided to recruit new engineers to accelerate product development.", grammar: "Decide (v.) + to V (不定詞) 作為受詞。", derivatives: "recruitment (n. 招募), recruiter (n. 招聘人員)", phrases: "recruit staff/personnel 招聘員工" },
+                    { en: "applicant", level: 0, kk: "[ˋæplɪkənt]", ipa: "/ˈæp.lɪ.kənt/", pos: "n.", ch: "申請人", sentence: "Every applicant must complete the online form.", grammar: "Every 後接單數名詞。", derivatives: "apply (v. 申請), application (n. 申請)", phrases: "job applicant 求職者" },
+                    { en: "resume", level: 0, kk: "[ˋrɛzʊ͵me]", ipa: "/ˈrez.ə.meɪ/", pos: "n.", ch: "履歷表", sentence: "Please attach your resume to your email.", grammar: "attach A to B (將A附加到B)。", derivatives: "—", phrases: "submit a resume 提交履歷" },
+                    { en: "interview", level: 0, kk: "[ˋɪntɚ͵vju]", ipa: "/ˈɪn.t̬ɚ.vjuː/", pos: "n./v.", ch: "面談；面試", sentence: "The second round of interviews is scheduled for next week.", grammar: "schedule (v.) for (安排在某時)。", derivatives: "interviewer (n. 面試官)", phrases: "conduct an interview 進行面試" },
+                    { en: "compensation", level: 0, kk: "[͵kɑmpɛnˋseʃən]", ipa: "/ˌkɑːm.pənˈseɪ.ʃən/", pos: "n.", ch: "報酬；補償", sentence: "The compensation package includes health insurance.", grammar: "compensation (U/C) package (薪酬方案)。", derivatives: "compensate (v. 補償)", phrases: "annual compensation 年度報酬" },
+                    { en: "eligible", level: 0, kk: "[ˋɛlɪdʒəbəl]", ipa: "/ˈel.ə.dʒə.bəl/", pos: "adj.", ch: "有資格的", sentence: "Only full-time employees are eligible for the bonus.", grammar: "be eligible for (有資格獲得)。", derivatives: "eligibility (n. 資格)", phrases: "eligible for promotion 有資格晉升" },
+                    { en: "probationary", level: 0, kk: "[ˋprobə͵nɛrɪ]", ipa: "/ˈproʊ.bə.ner.i/", pos: "adj.", ch: "試用期的", sentence: "The new manager is currently in a six-month probationary period.", grammar: "in a probationary period (在試用期內)。", derivatives: "probation (n. 試用期)", phrases: "probationary period 試用期" },
+                    { en: "prerequisite", level: 0, kk: "[͵prɪˋrɛkwəzɪt]", ipa: "/ˌpriːˈrek.wə.zɪt/", pos: "n.", ch: "先決條件", sentence: "A valid driver's license is a prerequisite for this delivery job.", grammar: "A is a prerequisite for B (A是B的先決條件)。", derivatives: "—", phrases: "prerequisite skills 必備技能" },
+                    { en: "vacancy", level: 0, kk: "[ˋvekənsɪ]", ipa: "/ˈveɪ.kən.si/", pos: "n.", ch: "空缺；職位空缺", sentence: "There is an immediate vacancy in the accounting department.", grammar: "vacancy (C. N.) in (在…部門的空缺)。", derivatives: "vacant (adj. 空的)", phrases: "fill a vacancy 補上空缺" },
+                    { en: "HR", level: 0, kk: "[eʧ ar]", ipa: "/ˌeɪtʃˈɑːr/", pos: "n.", ch: "人力資源部門", sentence: "Please contact HR to inquire about your benefits.", grammar: "HR 是 Human Resources 的縮寫。", derivatives: "—", phrases: "HR policy 人力資源政策" }
+                ]
+            },
+            // --- Topic 4: Financial Planning and Budgeting (財務規劃與預算) ---
+            {
+                id: 4,
+                title: "Topic 4: Financial Planning and Budgeting (財務規劃與預算)",
+                article: "The finance team must **allocate** sufficient funds for next quarter's projects. The most critical task is to prepare the annual **budget** proposal, which requires careful **projection** of future revenues. We must find areas where we can **cut corners** to increase our profit **margin**. After reviewing the **expenditures**, the manager requested an **audit** of the travel department's accounts. Any **discrepancy** must be reported immediately. Our priority is to maintain **fiscal** responsibility and adhere to all **regulations** to avoid any **liability**.",
+                words: [
+                    { en: "budget", level: 0, kk: "[ˋbʌdʒɪt]", ipa: "/ˈbʌdʒ.ɪt/", pos: "n./v.", ch: "預算；編預算", sentence: "We need to stay within the budget for this marketing campaign.", grammar: "stay within the budget (維持在預算內)。", derivatives: "budgetary (adj. 預算的)", phrases: "annual budget 年度預算" },
+                    { en: "allocate", level: 0, kk: "[ˋælə͵ket]", ipa: "/ˈæl.ə.keɪt/", pos: "v.", ch: "分配；撥款", sentence: "Resources were allocated efficiently across all departments.", grammar: "allocate A to B (將A分配給B)。", derivatives: "allocation (n. 分配)", phrases: "allocate funds 分配資金" },
+                    { en: "expenditure", level: 0, kk: "[ɪkˋspɛndəʧɚ]", ipa: "/ɪkˈspen.dɪ.tʃɚ/", pos: "n.", ch: "開支；支出", sentence: "All expenditures must be approved by the department head.", grammar: "expenditure (C. N.) (支出款項)。", derivatives: "expend (v. 花費)", phrases: "operating expenditures 營運開支" },
+                    { en: "projection", level: 0, kk: "[prəˋdʒɛkʃən]", ipa: "/prəˈdʒek.ʃən/", pos: "n.", ch: "預測；推算", sentence: "Sales projections for next year look promising.", grammar: "sales projections (銷售預測)。", derivatives: "project (v. 預測)", phrases: "financial projection 財務預測" },
+                    { en: "margin", level: 0, kk: "[ˋmɑrdʒɪn]", ipa: "/ˈmɑːr.dʒɪn/", pos: "n.", ch: "利潤；邊緣", sentence: "The company aims for a high profit margin on luxury goods.", grammar: "profit margin (利潤率)。", derivatives: "marginal (adj. 邊緣的)", phrases: "profit margin 利潤率" },
+                    { en: "audit", level: 0, kk: "[ˋɔdɪt]", ipa: "/ˈɔː.dɪt/", pos: "n./v.", ch: "審計；查帳", sentence: "The company undergoes an annual external audit.", grammar: "undergo an audit (接受審計)。", derivatives: "auditor (n. 審計員)", phrases: "internal audit 內部審計" },
+                    { en: "discrepancy", level: 0, kk: "[dɪˋskrɛpənsɪ]", ipa: "/dɪˈskrep.ən.si/", pos: "n.", ch: "不一致；差異", sentence: "We found a major discrepancy between the inventory records and the actual count.", grammar: "discrepancy between A and B (A和B之間的差異)。", derivatives: "discrepant (adj. 有差異的)", phrases: "account discrepancy 帳目差異" },
+                    { en: "fiscal", level: 0, kk: "[ˋfɪskəl]", ipa: "/ˈfɪs.kəl/", pos: "adj.", ch: "財政的；會計的", sentence: "The government announced new fiscal policies.", grammar: "fiscal (adj.) + N (財政年度/政策)。", derivatives: "—", phrases: "fiscal year 財政年度" },
+                    { en: "liability", level: 0, kk: "[͵laɪəˋbɪlətɪ]", ipa: "/ˌlaɪ.əˈbɪl.ə.t̬i/", pos: "n.", ch: "責任；負債", sentence: "The company assumed full liability for the product failure.", grammar: "assume liability (承擔責任)。", derivatives: "liable (adj. 有責任的)", phrases: "limited liability 有限責任" },
+                    { en: "regulation", level: 0, kk: "[͵rɛgjəˋleʃən]", ipa: "/ˌreɡ.jəˈleɪ.ʃən/", pos: "n.", ch: "規定；法規", sentence: "New environmental regulations were passed last month.", grammar: "regulation (C. N.) (規定)。", derivatives: "regulate (v. 管制)", phrases: "government regulations 政府法規" }
+                ]
+            },
+            // --- Topic 5: Marketing and Advertising (行銷與廣告) ---
+            {
+                id: 5,
+                title: "Topic 5: Marketing and Advertising (行銷與廣告)",
+                article: "Our goal is to **disseminate** information about the new product launch to the target **demographics**. We must choose the most effective **medium** for the **campaign**, weighing the benefits of social media against traditional **print** advertising. The marketing team will conduct an **assessment** of our competitors’ strategies. We need to boost our brand **recognition** and ensure our **slogan** resonates with consumers. We must adhere to strict **ethical** guidelines in all our **promotions** to maintain customer trust and avoid any **infringement** claims.",
+                words: [
+                    { en: "campaign", level: 0, kk: "[kæmˋpen]", ipa: "/kæmˈpeɪn/", pos: "n.", ch: "（活動）", sentence: "The new advertising campaign starts next week.", grammar: "campaign (C. N.) (活動)。", derivatives: "—", phrases: "marketing campaign 營銷活動" },
+                    { en: "disseminate", level: 0, kk: "[dɪˋsɛmə͵net]", ipa: "/dɪˈsem.ə.neɪt/", pos: "v.", ch: "散播；傳播", sentence: "The objective is to disseminate the news widely.", grammar: "disseminate A to B (將A傳播給B)。", derivatives: "dissemination (n. 傳播)", phrases: "disseminate information 傳播資訊" },
+                    { en: "demographics", level: 0, kk: "[͵dɛməˋgræfɪks]", ipa: "/ˌdem.əˈɡræf.ɪks/", pos: "n.", ch: "人口統計資料", sentence: "Our target demographics are young professionals aged 25-35.", grammar: "demographics (plural N.) (人口統計數據)。", derivatives: "demographic (adj.)", phrases: "target demographics 目標客群" },
+                    { en: "medium", level: 0, kk: "[ˋmidɪəm]", ipa: "/ˈmiː.di.əm/", pos: "n.", ch: "媒介；媒體", sentence: "Television remains a powerful advertising medium.", grammar: "medium (C. N.) (傳播媒介)。", derivatives: "media (plural N.)", phrases: "social media 社交媒體" },
+                    { en: "recognition", level: 0, kk: "[͵rɛkəgˋnɪʃən]", ipa: "/ˌrek.əɡˈnɪʃ.ən/", pos: "n.", ch: "認可；識別", sentence: "Building strong brand recognition takes time.", grammar: "brand recognition (品牌辨識度)。", derivatives: "recognize (v. 認可)", phrases: "gain recognition 獲得認可" },
+                    { en: "slogan", level: 0, kk: "[ˋsloʊgən]", ipa: "/ˈsloʊ.ɡən/", pos: "n.", ch: "標語；口號", sentence: "The company’s new slogan is simple and memorable.", grammar: "slogan (C. N.) (標語)。", derivatives: "—", phrases: "advertising slogan 廣告標語" },
+                    { en: "print", level: 0, kk: "[prɪnt]", ipa: "/prɪnt/", pos: "adj.", ch: "印刷的", sentence: "We are moving away from print advertisements.", grammar: "print (adj.) + N (印刷廣告)。", derivatives: "printer (n. 打印機)", phrases: "print media 平面媒體" },
+                    { en: "promotion", level: 0, kk: "[prəˋmoʃən]", ipa: "/prəˈmoʊ.ʃən/", pos: "n.", ch: "促銷；升遷", sentence: "The store is offering a special promotion this week.", grammar: "special promotion (特別促銷)。", derivatives: "promote (v. 促銷；升遷)", phrases: "sales promotion 銷售促銷" },
+                    { en: "ethical", level: 0, kk: "[ˋɛθɪkəl]", ipa: "/ˈeθ.ɪ.kəl/", pos: "adj.", ch: "道德的；倫理的", sentence: "We adhere strictly to ethical advertising standards.", grammar: "adhere to (v.) (遵守)。", derivatives: "ethics (n. 倫理學)", phrases: "ethical standards 道德標準" },
+                    { en: "infringement", level: 0, kk: "[ɪnˋfrɪndʒmənt]", ipa: "/ɪnˈfrɪndʒ.mənt/", pos: "n.", ch: "侵犯；違反", sentence: "The lawsuit cited copyright infringement.", grammar: "infringement (C/U. N.) (侵犯)。", derivatives: "infringe (v. 侵犯)", phrases: "patent infringement 專利侵權" }
+                ]
+            },
+            // --- Topic 6: Business Travel and Logistics (商務旅行與物流) ---
+            {
+                id: 6,
+                title: "Topic 6: Business Travel and Logistics (商務旅行與物流)",
+                article: "The **logistics** team is responsible for coordinating the overseas **shipment** of our products. Due to recent high demand, we need to **expedite** the delivery process. For the CEO's **itinerary**, the secretary has arranged the flight **reservation** and confirmed the **departure** time. Travel **allowances** must be calculated carefully, and all **expenses** must be documented with a **receipt**. The **cargo** must be handled with utmost care to avoid damage during **transit**.",
+                words: [
+                    { en: "logistics", level: 0, kk: "[loˋdʒɪstɪks]", ipa: "/ləˈdʒɪs.tɪks/", pos: "n.", ch: "物流；後勤", sentence: "Improved logistics management reduced our delivery time.", grammar: "logistics (U. N.) (物流管理)。", derivatives: "logistic (adj. 後勤的)", phrases: "supply chain logistics 供應鏈物流" },
+                    { en: "shipment", level: 0, kk: "[ˋʃɪpmənt]", ipa: "/ˈʃɪp.mənt/", pos: "n.", ch: "裝運；貨物", sentence: "The latest shipment of components arrived this morning.", grammar: "shipment (C. N.) (貨物)。", derivatives: "ship (v. 運輸)", phrases: "international shipment 國際貨運" },
+                    { en: "expedite", level: 0, kk: "[ˋɛkspə͵daɪt]", ipa: "/ˈek.spə.daɪt/", pos: "v.", ch: "加速；加快", sentence: "We need to expedite the decision-making process.", grammar: "expedite (v.) (加快進度)。", derivatives: "expedition (n. 遠征)", phrases: "expedite delivery 加速交貨" },
+                    { en: "itinerary", level: 0, kk: "[aɪˋtɪnə͵rɛrɪ]", ipa: "/aɪˈtɪn.ə.rer.i/", pos: "n.", ch: "行程；旅程", sentence: "The travel agent finalized our itinerary for the Asia trip.", grammar: "finalize the itinerary (確定行程)。", derivatives: "—", phrases: "detailed itinerary 詳細行程" },
+                    { en: "reservation", level: 0, kk: "[͵rɛzɚˋveʃən]", ipa: "/ˌrez.ɚˈveɪ.ʃən/", pos: "n.", ch: "預訂；預約", sentence: "Do you have a dinner reservation for tonight?", grammar: "make a reservation (預訂)。", derivatives: "reserve (v. 預訂)", phrases: "flight reservation 航班預訂" },
+                    { en: "departure", level: 0, kk: "[dɪˋpɑrʧɚ]", ipa: "/dɪˈpɑːr.tʃɚ/", pos: "n.", ch: "離開；出發", sentence: "We must arrive at the airport two hours before departure.", grammar: "before departure (在出發前)。", derivatives: "depart (v. 離開)", phrases: "departure gate 登機門" },
+                    { en: "allowance", level: 0, kk: "[əˋlaʊəns]", ipa: "/əˈlaʊ.əns/", pos: "n.", ch: "津貼；限額", sentence: "The company offers a monthly travel allowance.", grammar: "travel allowance (交通津貼)。", derivatives: "allow (v. 允許)", phrases: "baggage allowance 行李限額" },
+                    { en: "receipt", level: 0, kk: "[rɪˋsit]", ipa: "/rɪˈsiːt/", pos: "n.", ch: "收據", sentence: "Please keep all your receipts for reimbursement.", grammar: "keep the receipts (保留收據)。", derivatives: "receive (v. 收到)", phrases: "sales receipt 銷售收據" },
+                    { en: "cargo", level: 0, kk: "[ˋkɑrgo]", ipa: "/ˈkɑːr.ɡoʊ/", pos: "n.", ch: "貨物", sentence: "The ship was loaded with valuable cargo.", grammar: "cargo (U. N.) (貨物)。", derivatives: "—", phrases: "air cargo 空運貨物" },
+                    { en: "transit", level: 0, kk: "[ˋtrænsɪt]", ipa: "/ˈtræn.sɪt/", pos: "n.", ch: "運輸；過境", sentence: "The goods were damaged in transit.", grammar: "in transit (在運輸中)。", derivatives: "transition (n. 轉變)", phrases: "public transit 大眾運輸" }
+                ]
+            },
+            // --- Topic 7: Customer Service and Complaints (客戶服務與投訴) ---
+            {
+                id: 7,
+                title: "Topic 7: Customer Service and Complaints (客戶服務與投訴)",
+                article: "The customer service team’s primary goal is to ensure customer **satisfaction**. We need to quickly **address** all issues, especially formal **complaints**. If a customer is **dissatisfied**, we should offer a **refund** or a suitable **resolution**. Our representatives must always maintain a professional and **courteous** **demeanor**, even when dealing with demanding clients. We have established clear **guidelines** on how to handle **defective** products and guarantee that every **query** is answered within 24 hours.",
+                words: [
+                    { en: "satisfaction", level: 0, kk: "[͵sætɪsˋfækʃən]", ipa: "/ˌsæt̬ɪsˈfæk.ʃən/", pos: "n.", ch: "滿意", sentence: "Customer satisfaction is our highest priority.", grammar: "satisfaction (U. N.) (滿意度)。", derivatives: "satisfy (v. 使滿意), satisfactory (adj. 令人滿意的)", phrases: "job satisfaction 工作滿意度" },
+                    { en: "complaint", level: 0, kk: "[kəmˋplent]", ipa: "/kəmˈpleɪnt/", pos: "n.", ch: "抱怨；投訴", sentence: "We received a complaint about the delivery time.", grammar: "make a complaint about (對…抱怨)。", derivatives: "complain (v. 抱怨)", phrases: "file a complaint 提出投訴" },
+                    { en: "address", level: 0, kk: "[əˋdrɛs]", ipa: "/əˈdres/", pos: "v.", ch: "處理；設法解決", sentence: "The manager will address the problem immediately.", grammar: "address (v.) + N (處理問題)。", derivatives: "—", phrases: "address an issue 處理問題" },
+                    { en: "resolution", level: 0, kk: "[͵rɛzəˋluʃən]", ipa: "/ˌrez.əˈluː.ʃən/", pos: "n.", ch: "解決；決心", sentence: "We aim for a quick resolution to all disputes.", grammar: "resolution (C. N.) (解決方案)。", derivatives: "resolve (v. 解決)", phrases: "conflict resolution 衝突解決" },
+                    { en: "refund", level: 0, kk: "[ˋri͵fʌnd]", ipa: "/ˈriː.fʌnd/", pos: "n./v.", ch: "退款", sentence: "You are entitled to a full refund if the item is defective.", grammar: "be entitled to (有資格獲得)。", derivatives: "—", phrases: "request a refund 要求退款" },
+                    { en: "courteous", level: 0, kk: "[ˋkɝtɪəs]", ipa: "/ˈkɝː.t̬i.əs/", pos: "adj.", ch: "有禮貌的", sentence: "Our staff are always courteous and professional.", grammar: "be courteous (有禮貌的)。", derivatives: "courtesy (n. 禮貌)", phrases: "courteous service 禮貌服務" },
+                    { en: "demeanor", level: 0, kk: "[dɪˋminɚ]", ipa: "/dɪˈmiː.nɚ/", pos: "n.", ch: "舉止；風度", sentence: "The CEO maintained a calm demeanor during the crisis.", grammar: "maintain a demeanor (保持風度)。", derivatives: "—", phrases: "professional demeanor 專業舉止" },
+                    { en: "guideline", level: 0, kk: "[ˋgaɪd͵laɪn]", ipa: "/ˈɡaɪd.laɪn/", pos: "n.", ch: "指南；指導方針", sentence: "Employees must follow the new safety guidelines.", grammar: "follow guidelines (遵守指導方針)。", derivatives: "—", phrases: "operating guidelines 操作指南" },
+                    { en: "defective", level: 0, kk: "[dɪˋfɛktɪv]", ipa: "/dɪˈfek.tɪv/", pos: "adj.", ch: "有缺陷的", sentence: "The shipment was rejected due to defective parts.", grammar: "defective (adj.) + N (有缺陷的零件)。", derivatives: "defect (n. 缺陷)", phrases: "defective product 有缺陷產品" },
+                    { en: "query", level: 0, kk: "[ˋkwɪrɪ]", ipa: "/ˈkwɪr.i/", pos: "n.", ch: "詢問；疑問", sentence: "If you have any queries, please call the support line.", grammar: "have a query (有疑問)。", derivatives: "—", phrases: "customer query 客戶詢問" }
+                ]
+            }, 
+
+// --- Topic 8: Office Procedures and Administration (辦公室程序與行政) ---
+{
+    id: 8,
+    title: "Topic 8: Office Procedures and Administration (辦公室程序與行政)",
+    article: "All **correspondence** must be filed correctly according to the new **procedure**. The administrative assistant is required to handle all incoming **memorandum**s and schedule the weekly **conference**. Please ensure you use the **standard** software version for compatibility. After the **staffing** changes, the manager must **delegate** tasks more effectively to the team members. Remember to **verify** the attendance list before submitting it to the **registry**. We must always adhere to the company **protocol** when interacting with clients and ensure all work is **diligently** completed.",
+    words: [
+        { en: "procedure", level: 0, kk: "[prəˋsidʒɚ]", ipa: "/prəˈsiː.dʒər/", pos: "n.", ch: "程序；步驟", sentence: "The safety procedure must be reviewed annually.", grammar: "safety procedure (安全程序)。", derivatives: "proceed (v. 繼續)", phrases: "office procedure 辦公室程序" },
+        { en: "correspondence", level: 0, kk: "[͵kɔrəˋspɑndəns]", ipa: "/ˌkɔːr.əˈspɑːn.dəns/", pos: "n.", ch: "通信；信件", sentence: "We handle all customer correspondence via email.", grammar: "handle correspondence (處理信件)。", derivatives: "correspond (v. 通信；符合)", phrases: "business correspondence 商業信件" },
+        { en: "memorandum", level: 0, kk: "[͵mɛməˋrændəm]", ipa: "/ˌmem.əˈræn.dəm/", pos: "n.", ch: "備忘錄；公文", sentence: "A memorandum was sent regarding the policy changes.", grammar: "memorandum (C. N.) (公文)。", derivatives: "memo (n. 備忘錄，簡稱)", phrases: "internal memorandum 內部備忘錄" },
+        { en: "conference", level: 0, kk: "[ˋkɑnfərəns]", ipa: "/ˈkɑːn.fər.əns/", pos: "n.", ch: "會議", sentence: "The international sales conference will be held in Paris.", grammar: "sales conference (銷售會議)。", derivatives: "confer (v. 授予)", phrases: "video conference 視訊會議" },
+        { en: "standard", level: 0, kk: "[ˋstændɚd]", ipa: "/ˈstæn.dɚd/", pos: "adj./n.", ch: "標準的；水準", sentence: "We use standard operating procedures for all tasks.", grammar: "standard (adj.) + N (標準程序)。", derivatives: "standardize (v. 標準化)", phrases: "standard practice 標準作法" },
+        { en: "delegate", level: 0, kk: "[ˋdɛlə͵get]", ipa: "/ˈdel.ə.ɡeɪt/", pos: "v.", ch: "委派；授權", sentence: "The manager must delegate tasks to subordinates.", grammar: "delegate A to B (將A委派給B)。", derivatives: "delegation (n. 代表團；授權)", phrases: "delegate authority 授權" },
+        { en: "verify", level: 0, kk: "[ˋvɛrə͵faɪ]", ipa: "/ˈver.ə.faɪ/", pos: "v.", ch: "證實；核對", sentence: "Please verify the figures before submission.", grammar: "verify the figures (核對數字)。", derivatives: "verification (n. 證實)", phrases: "verify identity 驗證身份" },
+        { en: "registry", level: 0, kk: "[ˋrɛdʒɪstrɪ]", ipa: "/ˈredʒ.ɪ.stri/", pos: "n.", ch: "登記處；註冊", sentence: "The names were recorded in the central registry.", grammar: "in the registry (在登記處)。", derivatives: "register (v. 註冊)", phrases: "registry office 登記處" },
+        { en: "protocol", level: 0, kk: "[ˋproʊtə͵kɔl]", ipa: "/ˈproʊ.t̬ə.kɑːl/", pos: "n.", ch: "協議；規範", sentence: "The team followed strict security protocol.", grammar: "follow protocol (遵守規範)。", derivatives: "—", phrases: "security protocol 安全協議" },
+        { en: "diligently", level: 0, kk: "[ˋdɪlɪdʒəntlɪ]", ipa: "/ˈdɪl.ə.dʒənt.li/", pos: "adv.", ch: "勤奮地；認真地", sentence: "She worked diligently to complete the assignment.", grammar: "worked diligently (勤奮地工作)。", derivatives: "diligent (adj. 勤奮的)", phrases: "work diligently 勤奮工作" }
+    ]
+},
+
+// --- Topic 9: Investment and Banking (投資與銀行業務) ---
+{
+    id: 9,
+    title: "Topic 9: Investment and Banking (投資與銀行業務)",
+    article: "Before making any major **investment**, clients must carefully **consult** with a financial advisor regarding their **portfolio**. We offer competitive **interest** rates for long-term savings accounts. The bank requires proof of **collateral** before approving the **loan** application. You can easily access your account **balance** online. Please check the **transaction** details to ensure no **fee** was mistakenly applied. We also provide **secured** options for those looking to diversify their **asset**s.",
+    words: [
+        { en: "investment", level: 0, kk: "[ɪnˋvɛstmənt]", ipa: "/ɪnˈvest.mənt/", pos: "n.", ch: "投資", sentence: "His largest investment is in real estate.", grammar: "make an investment (進行投資)。", derivatives: "invest (v. 投資), investor (n. 投資者)", phrases: "return on investment (ROI) 投資回報" },
+        { en: "portfolio", level: 0, kk: "[pɔrtˋfolɪ͵o]", ipa: "/pɔːrtˈfoʊ.li.oʊ/", pos: "n.", ch: "（投資）組合", sentence: "She manages a diversified stock portfolio.", grammar: "manage a portfolio (管理投資組合)。", derivatives: "—", phrases: "investment portfolio 投資組合" },
+        { en: "interest", level: 0, kk: "[ˋɪntərɪst]", ipa: "/ˈɪn.trɪst/", pos: "n.", ch: "利息；興趣", sentence: "The bank offers high interest rates on savings.", grammar: "high interest rates (高利率)。", derivatives: "interested (adj. 感興趣的)", phrases: "interest rate 利率" },
+        { en: "consult", level: 0, kk: "[kənˋsʌlt]", ipa: "/kənˈsʌlt/", pos: "v.", ch: "諮詢；請教", sentence: "You should consult a tax professional before filing.", grammar: "consult with (向...諮詢)。", derivatives: "consultant (n. 顧問), consultation (n. 諮詢)", phrases: "consult with a lawyer 諮詢律師" },
+        { en: "collateral", level: 0, kk: "[kəˋlætərəl]", ipa: "/kəˈlæt̬.ɚ.əl/", pos: "n.", ch: "擔保品；抵押品", sentence: "The house was used as collateral for the business loan.", grammar: "use A as collateral for B (用A作B的抵押品)。", derivatives: "—", phrases: "provide collateral 提供擔保" },
+        { en: "loan", level: 0, kk: "[loʊn]", ipa: "/loʊn/", pos: "n./v.", ch: "貸款", sentence: "The bank approved his application for a personal loan.", grammar: "approve a loan (批准貸款)。", derivatives: "lend (v. 借出)", phrases: "apply for a loan 申請貸款" },
+        { en: "balance", level: 0, kk: "[ˋbæləns]", ipa: "/ˈbæl.əns/", pos: "n.", ch: "餘額；平衡", sentence: "Check your account balance before withdrawing money.", grammar: "account balance (帳戶餘額)。", derivatives: "balanced (adj. 平衡的)", phrases: "outstanding balance 未付餘額" },
+        { en: "transaction", level: 0, kk: "[trænˋzækʃən]", ipa: "/trænˈzæk.ʃən/", pos: "n.", ch: "交易", sentence: "All recent transactions are listed on your statement.", grammar: "transaction (C. N.) (交易紀錄)。", derivatives: "transact (v. 交易)", phrases: "financial transaction 金融交易" },
+        { en: "fee", level: 0, kk: "[fi]", ipa: "/fiː/", pos: "n.", ch: "費用；服務費", sentence: "The service fee will be waived for new customers.", grammar: "waive the fee (免除費用)。", derivatives: "—", phrases: "bank fee 銀行手續費" },
+        { en: "asset", level: 0, kk: "[ˋæsɛt]", ipa: "/ˈæs.et/", pos: "n.", ch: "資產", sentence: "The company's major assets include its patents.", grammar: "assets (常用複數) (資產)。", derivatives: "—", phrases: "liquid assets 流動資產" }
+    ]
+},
+
+// --- Topic 10: Product Development and R&D (產品開發與研發) ---
+{
+    id: 10,
+    title: "Topic 10: Product Development and R&D (產品開發與研發)",
+    article: "The **Research and Development (R&D)** team is prioritizing the **prototype** for our next major product. The current **version** requires significant **modification** before its market **debut**. We must ensure that the product **specifications** meet all industry **criteria**. The design team needs to **collaborate** closely with the engineers to maintain the highest **quality** standards. Any **defect** found during the **testing** phase must be reported immediately to guarantee reliability.",
+    words: [
+        { en: "prototype", level: 0, kk: "[ˋproʊtə͵taɪp]", ipa: "/ˈproʊ.t̬ə.taɪp/", pos: "n.", ch: "原型；樣本", sentence: "The engineers are building the first working prototype.", grammar: "building the prototype (建立原型)。", derivatives: "—", phrases: "functional prototype 功能原型" },
+        { en: "specifications", level: 0, kk: "[͵spɛsəfəˋkeʃənz]", ipa: "/ˌspes.ə.fɪˈkeɪ.ʃənz/", pos: "n.", ch: "規格；詳細說明", sentence: "The product specifications are listed in the manual.", grammar: "specifications (恆用複數) (規格)。", derivatives: "specify (v. 指定)", phrases: "technical specifications 技術規格" },
+        { en: "modification", level: 0, kk: "[͵mɑdəfəˋkeʃən]", ipa: "/ˌmɑː.dɪ.fəˈkeɪ.ʃən/", pos: "n.", ch: "修改；修正", sentence: "Minor modifications were made to the design.", grammar: "make modifications to (對...進行修改)。", derivatives: "modify (v. 修改)", phrases: "design modification 設計修改" },
+        { en: "version", level: 0, kk: "[ˋvɝʒən]", ipa: "/ˈvɝː.ʒən/", pos: "n.", ch: "版本", sentence: "The latest version of the software is now available.", grammar: "latest version (最新版本)。", derivatives: "—", phrases: "beta version 測試版本" },
+        { en: "criteria", level: 0, kk: "[kraɪˋtɪrɪə]", ipa: "/kraɪˈtɪr.i.ə/", pos: "n.", ch: "標準；準則", sentence: "The project must meet all the evaluation criteria.", grammar: "criteria (複數)；單數為 criterion。", derivatives: "—", phrases: "selection criteria 選擇標準" },
+        { en: "collaborate", level: 0, kk: "[kəˋlæbə͵ret]", ipa: "/kəˈlæb.ə.reɪt/", pos: "v.", ch: "合作；協作", sentence: "We must collaborate closely with the marketing team.", grammar: "collaborate with (與...合作)。", derivatives: "collaboration (n. 合作), collaborative (adj. 合作的)", phrases: "collaborate on a project 在專案上合作" },
+        { en: "quality", level: 0, kk: "[ˋkwɑlətɪ]", ipa: "/ˈkwɑː.lə.t̬i/", pos: "n.", ch: "品質", sentence: "We guarantee the highest quality of our materials.", grammar: "guarantee the quality (保證品質)。", derivatives: "qualify (v. 合格)", phrases: "quality control 品質管制" },
+        { en: "defect", level: 0, kk: "[ˋdifɛkt]", ipa: "/ˈdiː.fekt/", pos: "n.", ch: "缺陷；缺點", sentence: "The product was recalled due to a manufacturing defect.", grammar: "manufacturing defect (製造缺陷)。", derivatives: "defective (adj. 有缺陷的)", phrases: "minor defect 輕微缺陷" },
+        { en: "testing", level: 0, kk: "[ˋtɛstɪŋ]", ipa: "/ˈtes.tɪŋ/", pos: "n.", ch: "測試", sentence: "The product is currently in the final testing phase.", grammar: "testing phase (測試階段)。", derivatives: "test (v./n. 測試)", phrases: "user testing 用戶測試" },
+        { en: "debut", level: 0, kk: "[deˋbju]", ipa: "/ˈdeɪ.bjuː/", pos: "n./v.", ch: "首次亮相；初次登台", sentence: "The new model will make its debut at the tech show.", grammar: "make its debut (首次亮相)。", derivatives: "—", phrases: "market debut 上市首發" }
+    ]
+}
+// 結尾不需要逗號
+        ];
+
+        // --- 2. 核心邏輯 ---
+        
+        let appData = [];
+        let currentTopicIndex = null;
+        let quizQueue = [];
+        let quizCurrentWord = null;
+        let quizReviewCount = 0;
+
+        function init() {
+            // 使用 v3 確保與新資料結構相容
+            const saved = localStorage.getItem('toeicPro_v3'); 
+            if (saved) {
+                appData = JSON.parse(saved);
+            } else {
+                appData = JSON.parse(JSON.stringify(initialData));
+            }
+            showView('home');
+        }
+
+        function saveData() {
+            localStorage.setItem('toeicPro_v3', JSON.stringify(appData));
+        }
+
+        // --- 視圖切換 ---
+        function showView(viewName) {
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-study').classList.add('hidden');
+            document.getElementById('view-quiz').classList.add('hidden');
+            
+            if(viewName === 'home') {
+                document.getElementById('view-home').classList.remove('hidden');
+                renderTopics();
+            } else if (viewName === 'study') {
+                document.getElementById('view-study').classList.remove('hidden');
+            } else if (viewName === 'quiz') {
+                document.getElementById('view-quiz').classList.remove('hidden');
+            }
+        }
+
+        // --- 功能：語音朗讀 (TTS) ---
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US'; 
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // --- 首頁邏輯 ---
+        function renderTopics() {
+            const container = document.getElementById('topics-container');
+            container.innerHTML = '';
+            appData.forEach((topic, index) => {
+                const masteredCount = topic.words.filter(w => w.level === 3).length;
+                const totalCount = topic.words.length;
+                const percent = totalCount > 0 ? Math.round((masteredCount / totalCount) * 100) : 0;
+
+                const div = document.createElement('div');
+                div.className = 'bg-white p-6 rounded-lg shadow card-hover cursor-pointer border-l-4 border-blue-500 hover:bg-blue-50 transition';
+                div.onclick = () => openTopic(index);
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-lg text-gray-800">${topic.title}</h3>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">${masteredCount}/${totalCount} 掌握</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: ${percent}%"></div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // --- 學習模式邏輯 ---
+        function openTopic(index) {
+            currentTopicIndex = index;
+            const topic = appData[index];
+            
+            document.getElementById('study-title').innerText = topic.title;
+            // 將文章中的 **關鍵字** 替換為藍色粗體
+            let formattedArticle = topic.article.replace(/\*\*(.*?)\*\*/g, '<b class="text-blue-700 font-semibold">$1</b>');
+            document.getElementById('study-article').innerHTML = formattedArticle;
+            
+            // 確保文章展開
+            document.getElementById('study-article').classList.remove('hidden');
+            document.getElementById('article-icon').classList.remove('fa-chevron-down');
+            document.getElementById('article-icon').classList.add('fa-chevron-up');
+            
+            renderWords();
+            showView('study');
+        }
+
+        function toggleArticle() {
+            const art = document.getElementById('study-article');
+            const icon = document.getElementById('article-icon');
+            art.classList.toggle('hidden');
+            icon.classList.toggle('fa-chevron-up');
+            icon.classList.toggle('fa-chevron-down');
+        }
+
+        function renderWords() {
+            const container = document.getElementById('words-container');
+            container.innerHTML = '';
+            const words = appData[currentTopicIndex].words;
+
+            words.forEach((word, wordIndex) => {
+                const div = document.createElement('div');
+                div.className = `level-${word.level} bg-white rounded-lg shadow-md overflow-hidden mb-4`;
+                
+                const levels = ["新單字", "複習 I", "複習 II", "已掌握"];
+                const levelColor = ["text-gray-400", "text-red-500", "text-yellow-500", "text-green-500"];
+
+                div.innerHTML = `
+                    <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-2xl font-bold text-blue-900">${word.en}</h3>
+                            <button onclick="speak('${word.en}')" class="text-gray-500 hover:text-blue-600">
+                                <i class="fas fa-volume-up text-lg"></i>
+                            </button>
+                        </div>
+                        <span class="text-xs font-bold ${levelColor[word.level]} border border-current px-2 py-1 rounded">${levels[word.level]}</span>
+                    </div>
+                    
+                    <div class="p-4 info-grid">
+                        <div class="section-box">
+                            <div class="section-title">Basic Info (音標, 翻譯)</div>
+                            <p><span class="text-gray-500">KK:</span> ${word.kk || '-'} <span class="mx-1">|</span> <span class="text-gray-500">IPA:</span> ${word.ipa || '-'}</p>
+                            <p class="mt-1"><span class="bg-blue-100 text-blue-800 text-xs px-1 rounded">${word.pos || '-'}</span> <span class="font-bold text-gray-800">${word.ch}</span></p>
+                        </div>
+
+                        <div class="section-box">
+                            <div class="section-title">Usage & Grammar (例句, 分析)</div>
+                            <p class="text-blue-900 italic mb-1">"${word.sentence || ''}"</p>
+                            <p class="text-xs text-gray-500 border-t pt-1 mt-1">${word.grammar || '暫無解析'}</p>
+                        </div>
+
+                        <div class="section-box">
+                            <div class="section-title">Word Family (衍生字)</div>
+                            <p class="text-sm text-gray-700">${word.derivatives || '無'}</p>
+                        </div>
+
+                        <div class="section-box">
+                            <div class="section-title">Phrases / Collocations (片語, 句型)</div>
+                            <p class="text-sm text-gray-700">${word.phrases || '無'}</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-gray-50 flex justify-end gap-3">
+                         <button onclick="updateWordLevel(${wordIndex}, -1)" class="text-red-600 hover:bg-red-50 px-3 py-1 rounded text-sm font-bold">忘記了</button>
+                         <button onclick="updateWordLevel(${wordIndex}, 1)" class="text-green-600 hover:bg-green-50 px-3 py-1 rounded text-sm font-bold">記住了</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateWordLevel(wordIndex, change) {
+            let word = appData[currentTopicIndex].words[wordIndex];
+            if (change === 1) {
+                if (word.level < 3) word.level++;
+            } else {
+                word.level = 1; 
+            }
+            saveData(); 
+            renderWords();
+        }
+
+        // --- 隨機測驗邏輯 ---
+        function startQuiz() {
+            let allWords = [];
+            appData.forEach((topic, tIndex) => {
+                topic.words.forEach((word, wIndex) => {
+                    allWords.push({ ...word, tIndex, wIndex });
+                });
+            });
+
+            quizQueue = allWords.sort(() => 0.5 - Math.random());
+            quizReviewCount = 0;
+            document.getElementById('quiz-count').innerText = 0;
+            
+            if (quizQueue.length > 0) {
+                showView('quiz');
+                loadNextQuizCard();
+            } else {
+                alert("目前沒有單字資料！");
+            }
+        }
+
+        function loadNextQuizCard() {
+            if (quizQueue.length === 0) {
+                alert("測驗結束！所有單字都複習過一輪了。");
+                showView('home');
+                return;
+            }
+            quizCurrentWord = quizQueue.pop();
+            
+            document.getElementById('quiz-front').classList.remove('hidden');
+            document.getElementById('quiz-back').classList.add('hidden');
+            
+            document.getElementById('q-word').innerText = quizCurrentWord.en;
+            document.getElementById('q-pos').innerText = quizCurrentWord.pos || 'word';
+            document.getElementById('q-mean').innerText = quizCurrentWord.ch;
+            document.getElementById('q-sentence').innerText = quizCurrentWord.sentence || '';
+        }
+
+        function flipQuizCard() {
+            if (document.getElementById('quiz-front').classList.contains('hidden')) return; // 防止重複翻面
+            
+            document.getElementById('quiz-front').classList.add('hidden');
+            document.getElementById('quiz-back').classList.remove('hidden');
+            speak(quizCurrentWord.en); 
+        }
+
+        function answerQuiz(remembered, event) {
+            event.stopPropagation(); 
+            
+            let originalWord = appData[quizCurrentWord.tIndex].words[quizCurrentWord.wIndex];
+            
+            if (remembered) {
+                if (originalWord.level < 3) originalWord.level++;
+            } else {
+                originalWord.level = 1;
+            }
+            saveData();
+
+            quizReviewCount++;
+            document.getElementById('quiz-count').innerText = quizReviewCount;
+
+            loadNextQuizCard();
+        }
+
+        init();
+    </script>
+</body>
+</html>
